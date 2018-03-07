@@ -23,4 +23,4 @@ class Component {
     }
     return this.el
   }
-}
+} 
