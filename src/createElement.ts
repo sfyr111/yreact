@@ -5,7 +5,7 @@
  * @param {ArrayLike} args
  * @returns {{props: Object; children: Array; nodeName: String}}
  */
-export function createElement(comp: Array | Function, props: Object = {}, ...args: ArrayLike): VNode {
+export function createElement(comp: Array | Component, props: Object, ...args: ArrayLike): VNode {
   let children = []
   for (let i = 0; i < args.length; i++) {
     if (Array.isArray(args[i])) {
@@ -15,7 +15,7 @@ export function createElement(comp: Array | Function, props: Object = {}, ...arg
     }
   }
   return {
-    props,
+    props: props || {},
     children,
     nodeName: comp,
   }
