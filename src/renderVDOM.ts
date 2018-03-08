@@ -3,7 +3,8 @@
  * @param {VNode | Component} vnode
  * @returns {VNode}
  */
-export function renderVDOM(vnode: VNode | Component): VNode {
+export function renderVDOM(vnode: VNode): VNode {
+  if (!vnode) return // 可能是函数执行
   // text 节点
   if (typeof vnode === 'string') return vnode
   // 普通vnode

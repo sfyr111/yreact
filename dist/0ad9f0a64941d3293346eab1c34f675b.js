@@ -71,7 +71,62 @@ require = (function (modules, cache, entry) {
 
   // Override the current require with this new one
   return newRequire;
-})({14:[function(require,module,exports) {
+})({13:[function(require,module,exports) {
+"use strict";
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function render(vnode, parent) {
+    var dom;
+    if (typeof vnode === 'string') {
+        dom = document.createTextNode(vnode);
+        parent.appendChild(dom);
+    } else if (typeof vnode.nodeName === 'string') {
+        dom = document.createElement(vnode.nodeName);
+        setAttrs(dom, vnode.props);
+        parent.appendChild(dom);
+        // 虚拟dom 渲染后递归
+        for (var i = 0; i < vnode.children.length; i++) {
+            render(vnode.children[i], dom);
+        }
+    } else if (typeof vnode.nodeName === 'function') {
+        var func = vnode.nodeName;
+        var inst = new func(vnode.props);
+        var innerVNode = inst.render(); // 组件render 出来递归
+        render(innerVNode, parent);
+    }
+}
+exports.render = render;
+function setAttrs(dom, props) {
+    var keys = Object.keys(props);
+    keys.forEach(function (k) {
+        var v = props[k];
+        if (k === 'className') {
+            dom.setAttribute('class', v);
+            return;
+        }
+        if (k === 'style') {
+            if (typeof v === 'string') {
+                dom.style.cssText = v;
+            }
+            if ((typeof v === "undefined" ? "undefined" : _typeof(v)) === 'object') {
+                for (var i in v) {
+                    dom.style[i] = v[i];
+                }
+            }
+            return;
+        }
+        if (k[0] === 'o' && k[1] === 'n') {
+            // onClickCapture
+            var capture = k.indexOf('Capture') !== -1;
+            dom.addEventListener(k.replace('Capture', '').substring(2).toLowerCase(), v, capture);
+            return;
+        }
+        dom.setAttribute(k, v);
+    });
+}
+},{}],4:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -81,6 +136,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @returns {VNode}
  */
 function renderVDOM(vnode) {
+    if (!vnode) return; // 可能是函数执行
     // text 节点
     if (typeof vnode === 'string') return vnode;else if (typeof vnode.nodeName === 'string') {
         var result = {
@@ -101,7 +157,7 @@ function renderVDOM(vnode) {
     }
 }
 exports.renderVDOM = renderVDOM;
-},{}],15:[function(require,module,exports) {
+},{}],5:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -118,6 +174,7 @@ function createElement(comp, props) {
         args[_i - 2] = arguments[_i];
     }
     var children = [];
+    props = props || {};
     for (var i = 0; i < args.length; i++) {
         if (Array.isArray(args[i])) {
             children = children.concat(args[i]);
@@ -126,21 +183,34 @@ function createElement(comp, props) {
         }
     }
     return {
+        nodeName: comp,
         props: props || {},
-        children: children,
-        nodeName: comp
+        children: children
     };
 }
 exports.createElement = createElement;
-},{}],12:[function(require,module,exports) {
+},{}],3:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var render_1 = require("./render");
+exports.render = render_1.render;
 var renderVDOM_1 = require("./renderVDOM");
 exports.renderVDOM = renderVDOM_1.renderVDOM;
 var createElement_1 = require("./createElement");
 exports.createElement = createElement_1.createElement;
-},{"./renderVDOM":14,"./createElement":15}],10:[function(require,module,exports) {
+},{"./render":13,"./renderVDOM":4,"./createElement":5}],12:[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var Component = /** @class */function () {
+    function Component(props) {
+        this.props = props;
+    }
+    return Component;
+}();
+exports.default = Component;
+},{}],2:[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
@@ -161,23 +231,45 @@ var __extends = this && this.__extends || function () {
 }();
 exports.__esModule = true;
 var yreact_1 = require("./src/yreact");
+var component_1 = require("./src/component");
 var React = {};
 React.createElement = yreact_1.createElement;
-React.Component = /** @class */function () {
-    function Component() {}
-    return Component;
-}();
+React.Component = component_1["default"];
+var C1 = /** @class */function (_super) {
+    __extends(C1, _super);
+    function C1() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    C1.prototype.render = function () {
+        return React.createElement(
+            "div",
+            null,
+            React.createElement(
+                "span",
+                null,
+                "2"
+            )
+        );
+    };
+    return C1;
+}(React.Component);
 var Grandson = /** @class */function (_super) {
     __extends(Grandson, _super);
     function Grandson() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     Grandson.prototype.render = function () {
+        // return <div>i am grandson</div>  // React.createElement('div', null, "i am grandson")
+        console.log(this.props);
         return React.createElement(
             "div",
             null,
-            "i am grandson"
-        ); // React.createElement('div', null, "i am grandson")
+            React.createElement(
+                "span",
+                null,
+                "1123"
+            )
+        );
     };
     return Grandson;
 }(React.Component);
@@ -187,7 +279,12 @@ var Son = /** @class */function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     Son.prototype.render = function () {
-        return React.createElement(Grandson, null); // React.createElement(Grandson)
+        // return <Grandson /> // React.createElement(Grandson)
+        return React.createElement(
+            "header",
+            null,
+            React.createElement(Grandson, null)
+        );
     };
     return Son;
 }(React.Component);
@@ -201,9 +298,10 @@ var Father = /** @class */function (_super) {
     };
     return Father;
 }(React.Component);
-var vv = yreact_1.renderVDOM(React.createElement(Father, null));
-console.log("vv:", vv);
-},{"./src/yreact":12}],5:[function(require,module,exports) {
+// const vv = renderVDOM(<Father />)
+// console.log("vv:", vv)
+yreact_1.render(React.createElement(Father, null), document.getElementById('app'));
+},{"./src/yreact":3,"./src/component":12}],6:[function(require,module,exports) {
 
 var global = (1, eval)('this');
 var OldModule = module.bundle.Module;
@@ -225,7 +323,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = '' || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + '63899' + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + '50809' + '/');
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);
 
@@ -326,5 +424,5 @@ function hmrAccept(bundle, id) {
     return hmrAccept(global.require, id);
   });
 }
-},{}]},{},[5,10])
+},{}]},{},[6,2])
 //# sourceMappingURL=/dist/0ad9f0a64941d3293346eab1c34f675b.map

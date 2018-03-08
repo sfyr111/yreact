@@ -1,9 +1,13 @@
-interface Component {
+interface IComponent {
   render: Function
 }
 
 interface VNode {
-  nodeName: String | Function,
+  nodeName: String | IComponent,
   props: Object,
-  children: Array<VNode>
+  children: Array<VNode | string>
+}
+
+interface IProps {
+  children?: any[]
 }
