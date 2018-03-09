@@ -71,30 +71,34 @@ require = (function (modules, cache, entry) {
 
   // Override the current require with this new one
   return newRequire;
-})({13:[function(require,module,exports) {
+})({6:[function(require,module,exports) {
 "use strict";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function render(vnode, parent) {
+function render(vnode, parent, comp, olddom) {
     var dom;
     if (typeof vnode === 'string') {
         dom = document.createTextNode(vnode);
+        comp && (comp.__rendered = dom);
         parent.appendChild(dom);
+        if (olddom) parent.replaceChild(dom, olddom);else parent.appendChild(dom);
     } else if (typeof vnode.nodeName === 'string') {
         dom = document.createElement(vnode.nodeName);
+        comp && (comp.__rendered = dom);
         setAttrs(dom, vnode.props);
-        parent.appendChild(dom);
+        if (olddom) parent.replaceChild(dom, olddom);else parent.appendChild(dom);
         // 虚拟dom 渲染后递归
         for (var i = 0; i < vnode.children.length; i++) {
             render(vnode.children[i], dom);
         }
     } else if (typeof vnode.nodeName === 'function') {
         var func = vnode.nodeName;
-        var inst = new func(vnode.props);
+        var inst = new func(vnode.props); // 组件实例
+        comp && (comp.__rendered = inst);
         var innerVNode = inst.render(); // 组件render 出来递归
-        render(innerVNode, parent);
+        render(innerVNode, parent, inst, olddom);
     }
 }
 exports.render = render;
@@ -126,7 +130,7 @@ function setAttrs(dom, props) {
         dom.setAttribute(k, v);
     });
 }
-},{}],4:[function(require,module,exports) {
+},{}],7:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -157,7 +161,7 @@ function renderVDOM(vnode) {
     }
 }
 exports.renderVDOM = renderVDOM;
-},{}],5:[function(require,module,exports) {
+},{}],8:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -189,7 +193,7 @@ function createElement(comp, props) {
     };
 }
 exports.createElement = createElement;
-},{}],3:[function(require,module,exports) {
+},{}],4:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -199,18 +203,50 @@ var renderVDOM_1 = require("./renderVDOM");
 exports.renderVDOM = renderVDOM_1.renderVDOM;
 var createElement_1 = require("./createElement");
 exports.createElement = createElement_1.createElement;
-},{"./render":13,"./renderVDOM":4,"./createElement":5}],12:[function(require,module,exports) {
+},{"./render":6,"./renderVDOM":7,"./createElement":8}],5:[function(require,module,exports) {
+"use strict";
+/**
+ * create by yangran on 2018/3/8
+ */
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var component_1 = require("./component");
+/**
+ * todo 获取 olddom
+ * @param 由谁渲染
+ * @returns {HTMLElement}
+ */
+function getDOM(comp) {
+  var rendered = comp.__rendered;
+  while (rendered instanceof component_1.default) {
+    rendered = rendered.__rendered;
+  }
+  return rendered;
+}
+exports.getDOM = getDOM;
+},{"./component":3}],3:[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = require("./util");
+var render_1 = require("./render");
 var Component = /** @class */function () {
     function Component(props) {
         this.props = props;
     }
+    Component.prototype.setState = function (state) {
+        var _this = this;
+        setTimeout(function () {
+            _this.state = state;
+            var vnode = _this.render();
+            var olddom = util_1.getDOM(_this);
+            render_1.render(vnode, olddom.parentNode, _this, olddom);
+        }, 0);
+    };
     return Component;
 }();
 exports.default = Component;
-},{}],2:[function(require,module,exports) {
+},{"./util":5,"./render":6}],2:[function(require,module,exports) {
 "use strict";
 
 var __extends = this && this.__extends || function () {
@@ -235,73 +271,67 @@ var component_1 = require("./src/component");
 var React = {};
 React.createElement = yreact_1.createElement;
 React.Component = component_1["default"];
-var C1 = /** @class */function (_super) {
-    __extends(C1, _super);
-    function C1() {
+var Child = /** @class */function (_super) {
+    __extends(Child, _super);
+    function Child() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    C1.prototype.render = function () {
+    Child.prototype.render = function () {
+        var _this = this;
         return React.createElement(
             "div",
-            null,
+            { style: { color: this.props.color } },
+            "color is: ",
+            this.props.color,
             React.createElement(
-                "span",
-                null,
-                "2"
+                "button",
+                { onClick: function onClick() {
+                        return console.log(_this);
+                    } },
+                "child - this"
             )
         );
     };
-    return C1;
-}(React.Component);
-var Grandson = /** @class */function (_super) {
-    __extends(Grandson, _super);
-    function Grandson() {
-        return _super !== null && _super.apply(this, arguments) || this;
+    return Child;
+}(component_1["default"]);
+var colors = ['red', 'blue', 'yellow', 'black', 'green'];
+var App = /** @class */function (_super) {
+    __extends(App, _super);
+    function App(props) {
+        var _this = _super.call(this, props) || this;
+        _this.state = {
+            color: 'grey'
+        };
+        return _this;
     }
-    Grandson.prototype.render = function () {
-        // return <div>i am grandson</div>  // React.createElement('div', null, "i am grandson")
-        console.log(this.props);
+    App.prototype.handleClick = function () {
+        console.log("handleClick");
+        this.setState({
+            color: colors[parseInt(Math.random() * 5)]
+        });
+    };
+    App.prototype.render = function () {
+        var _this = this;
         return React.createElement(
             "div",
-            null,
+            { onClick: this.handleClick.bind(this) },
+            React.createElement(Child, { color: this.state.color }),
             React.createElement(
-                "span",
-                null,
-                "1123"
+                "button",
+                { onClick: function onClick() {
+                        return console.log(_this);
+                    } },
+                "app - this"
             )
         );
     };
-    return Grandson;
-}(React.Component);
-var Son = /** @class */function (_super) {
-    __extends(Son, _super);
-    function Son() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    Son.prototype.render = function () {
-        // return <Grandson /> // React.createElement(Grandson)
-        return React.createElement(
-            "header",
-            null,
-            React.createElement(Grandson, null)
-        );
-    };
-    return Son;
-}(React.Component);
-var Father = /** @class */function (_super) {
-    __extends(Father, _super);
-    function Father() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    Father.prototype.render = function () {
-        return React.createElement(Son, null); // React.createElement(Son)
-    };
-    return Father;
-}(React.Component);
-// const vv = renderVDOM(<Father />)
-// console.log("vv:", vv)
-yreact_1.render(React.createElement(Father, null), document.getElementById('app'));
-},{"./src/yreact":3,"./src/component":12}],6:[function(require,module,exports) {
+    return App;
+}(component_1["default"]);
+// console.log(renderVDOM(<PS />))
+yreact_1.render(React.createElement(App, null), document.getElementById("app"));
+// window.fn = () => render(<App />, document.getElementById("app"))
+// setTimeout(fn, 1000)
+},{"./src/yreact":4,"./src/component":3}],9:[function(require,module,exports) {
 
 var global = (1, eval)('this');
 var OldModule = module.bundle.Module;
@@ -323,7 +353,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = '' || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + '50809' + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + '55435' + '/');
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);
 
@@ -424,5 +454,5 @@ function hmrAccept(bundle, id) {
     return hmrAccept(global.require, id);
   });
 }
-},{}]},{},[6,2])
+},{}]},{},[9,2])
 //# sourceMappingURL=/dist/0ad9f0a64941d3293346eab1c34f675b.map

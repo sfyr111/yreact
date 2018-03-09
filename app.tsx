@@ -5,42 +5,39 @@ const React = {}
 React.createElement = createElement
 React.Component = Component
 
-class C1 extends React.Component {
+class Child extends Component {
   render() {
     return (
-      <div><span>2</span></div>
+      <div style={{ color: this.props.color }}>color is: {this.props.color}<button onClick={() => console.log(this)}>child - this</button></div>
     )
   }
 }
 
-class Grandson extends React.Component {
+const colors = ['red', 'blue', 'yellow', 'black', 'green']
+class App extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      color: 'grey'
+    }
+  }
+  handleClick() {
+    console.log("handleClick")
+    this.setState({
+      color: colors[parseInt(Math.random() * 5)]
+    })
+  }
   render() {
-    // return <div>i am grandson</div>  // React.createElement('div', null, "i am grandson")
-    console.log(this.props)
     return (
-      <div>
-        <span>1123</span>
+      <div onClick={this.handleClick.bind(this)}>
+        <Child color={ this.state.color }/>
+        <button onClick={() => console.log(this)}>app - this</button>
       </div>
     )
   }
 }
 
-class Son extends React.Component {
-  render() {
-    // return <Grandson /> // React.createElement(Grandson)
-    return (
-      <header>
-        <Grandson />
-      </header>
-    )
-  }
-}
-class Father extends React.Component {
-  render() {
-    return <Son /> // React.createElement(Son)
-  }
-}
-
-// const vv = renderVDOM(<Father />)
-// console.log("vv:", vv)
-render(<Father />, document.getElementById('app'))
+// console.log(renderVDOM(<PS />))
+render(<App />, document.getElementById("app"))
+// window.fn = () => render(<App />, document.getElementById("app"))
+// setTimeout(fn, 1000)

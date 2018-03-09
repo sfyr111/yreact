@@ -1,5 +1,7 @@
 interface IComponent {
-  render: Function
+  render: Function,
+  setState: Function,
+  __rendered?: HTMLElement | IComponent
 }
 
 interface VNode {
